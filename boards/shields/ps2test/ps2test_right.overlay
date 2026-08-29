@@ -1,0 +1,97 @@
+#include "ps2test.dtsi"
+#include "ps2test_trackpoint.dtsi"
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <input/processors.dtsi>
+#include <dt-bindings/zmk/input_transform.h>
+
+/ {
+    ps2_listener: ps2_listener {
+        compatible = "zmk,input-listener";
+        status = "okay";
+        device = <&tpoint0>;
+
+        /* Dabase parity on the standalone bench:
+         * - XY swap so the nub direction matches the dabase (Exp71: swap-only)
+         * - touch the TP -> tp_layer (layer 2) for a 500 ms idle timeout,
+         *   giving MB1/MB2/MB3 on the right thumb cluster (Exp72)
+         * - hold J (layer 3) -> scroll, hold K (layer 4) -> volume (Exp73).
+         * The standalone-central listener is proven on this bench (the dabase
+         * central path was never verified - the dongle handles it there). */
+        input-processors = <&zip_xy_transform (INPUT_TRANSFORM_XY_SWAP)>, <&tp_temp_layer 2 500>;
+
+        /* hold J -> trackpoint tilt becomes scroll. Y-invert matches the
+         * natural-up mapping; process-next keeps the touch-toggle active so
+         * MB1/2/3 still work while scroll-holding. Deltas are PowerCurve-
+         * shaped (sens 0.5x), so 1:2 may need retuning. */
+        scroll_override {
+            layers = <3>;
+            input-processors = <&zip_xy_to_scroll_mapper>, <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>, <&zip_scroll_scaler 1 2>;
+            process-next;
+        };
+
+        /* hold K -> trackpoint tilt becomes volume. Y-invert so up = louder
+         * (mirrors scroll/Exp51). Keybind override first (process-next), then
+         * scale X/Y to 0 so the cursor stays put on layer 4 (Exp51 lesson:
+         * the zero scaler without process-next is what actually eats the
+         * leftover movement). */
+        volume_override {
+            layers = <4>;
+            input-processors = <&zip_xy_transform INPUT_TRANSFORM_Y_INVERT>, <&keybind_volume>;
+            process-next;
+        };
+
+        volume_move_zero {
+            layers = <4>;
+            input-processors = <&zip_xy_scaler 0 1>;
+        };
+    };
+
+    tp_temp_layer: tp_temp_layer {
+        compatible = "zmk,input-processor-temp-layer";
+        #input-processor-cells = <2>;
+        status = "okay";
+    };
+
+    /* Exp73: volume keybind — defined inline (the module's own dtsi pulls
+     * <dt-bindings/zmk/input-processor-keybind.h>, missing from ZMK + the
+     * module). Bindings order is [RIGHT, LEFT, DOWN, UP] per press_work_cb:
+     * X mapped to &none so only Y produces volume. tick 32 = very slow,
+     * ~3x slower than scroll (Exp51 tuning). */
+    keybind_volume: keybind_volume {
+        compatible = "zmk,input-processor-keybind";
+        #input-processor-cells = <0>;
+        mode = <0>;
+        track_remainders;
+        bindings = <&none>, <&none>, <&kp C_VOLUME_DOWN>, <&kp C_VOLUME_UP>;
+        tick = <32>;
+        wait-ms = <10>;
+        tap-ms = <12>;
+        threshold = <1>;
+        max_threshold = <512>;
+        max_pending_activations = <2>;
+    };
+
+    kscan0: kscan0 {
+        compatible = "zmk,kscan-gpio-matrix";
+        diode-direction = "col2row";
+        row-gpios
+            = <&gpio0 31 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            , <&gpio1 15 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            , <&gpio0 24 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            , <&gpio1 6  (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>
+            ;
+        col-gpios
+            = <&gpio0 2  GPIO_ACTIVE_HIGH>
+            , <&gpio0 29 GPIO_ACTIVE_HIGH>
+            , <&gpio0 9  GPIO_ACTIVE_HIGH>
+            , <&gpio1 0  GPIO_ACTIVE_HIGH>
+            , <&gpio1 4  GPIO_ACTIVE_HIGH>
+            , <&gpio1 11 GPIO_ACTIVE_HIGH>
+            ;
+    };
+};
+
+&physical_layout0 {
+    kscan = <&kscan0>;
+};

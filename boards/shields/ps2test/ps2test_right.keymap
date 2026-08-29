@@ -1,0 +1,67 @@
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/pointing.h>
+#include <dt-bindings/zmk/bt.h>
+
+/ {
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            display-name = "QWERTY";
+            bindings = <
+    &kp Y &kp U   &kp I   &kp O     &kp P     &kp BSPC
+    &kp H &lt 3 J &lt 4 K &kp L     &kp SEMI  &kp RET
+    &kp N &kp M   &kp COMMA &kp DOT &kp FSLH  &kp RSHFT
+    &kp SPACE &mo 1  &kp RET  &kp ESC  &kp TAB   &kp DEL
+            >;
+        };
+
+        lower_layer {
+            display-name = "LOWER";
+            bindings = <
+    &kp F1 &kp F2  &kp F3  &kp F4  &kp F5  &kp F6
+    &kp F7 &kp F8  &kp F9  &kp F10 &kp F11 &kp F12
+    &trans &trans &trans &trans &trans &trans
+    &kp SPACE &mo 1 &kp RET &kp ESC &kp TAB &kp DEL
+            >;
+        };
+
+        /* Touch the TP -> this layer for 500 ms idle (tp_temp_layer on the
+         * listener); MB1/MB2/MB3 on the right thumb cluster (row 3 right). */
+        tp_layer {
+            display-name = "TOUCH";
+            bindings = <
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &mkp MB1 &mkp MB2 &mkp MB3
+            >;
+        };
+
+        /* hold J -> trackpoint tilt becomes scroll (scroll_override on the
+         * listener). MB1/2/3 stay on the thumb so click-while-scrolling
+         * works (mirrors Exp32/Exp51). */
+        scroll_layer {
+            display-name = "SCROLL";
+            bindings = <
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &mkp MB1 &mkp MB2 &mkp MB3
+            >;
+        };
+
+        /* hold K -> trackpoint tilt becomes volume (keybind_volume on the
+         * listener, cursor held put by volume_move_zero). MB1/2/3 stay. */
+        volume_layer {
+            display-name = "VOLUME";
+            bindings = <
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &trans &trans &trans
+    &trans &trans &trans &mkp MB1 &mkp MB2 &mkp MB3
+            >;
+        };
+    };
+};

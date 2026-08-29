@@ -1,0 +1,2 @@
+config SHIELD_PS2TEST_RIGHT
+	def_bool $(shields_list_contains,ps2test_right)

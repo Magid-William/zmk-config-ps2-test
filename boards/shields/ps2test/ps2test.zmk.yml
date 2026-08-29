@@ -1,0 +1,9 @@
+file_format: "1"
+id: ps2test
+name: PS2Test
+type: shield
+url: https://github.com/Magid-William/zmk-config-ps2-test
+requires: [pro_micro]
+features:
+  - keys
+  - pointing

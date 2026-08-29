@@ -1,0 +1,12 @@
+if SHIELD_PS2TEST_RIGHT
+
+config ZMK_KEYBOARD_NAME
+	default "ps2test"
+
+config ZMK_SPLIT_ROLE_CENTRAL
+	default y
+
+config ZMK_POINTING
+	default y
+
+endif

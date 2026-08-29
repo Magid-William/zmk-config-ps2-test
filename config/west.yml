@@ -1,0 +1,31 @@
+manifest:
+  remotes:
+    - name: zmkfirmware
+      url-base: https://github.com/zmkfirmware
+    - name: magid
+      url-base: https://github.com/Magid-William
+    - name: te9no
+      url-base: https://github.com/te9no
+  projects:
+    - name: zmk
+      remote: zmkfirmware
+      revision: ac7f75b8
+      import: app/west.yml
+
+    # pr/optional-features branch (optional-features refactor)
+    - name: zmk-ps2-trackpoint-driver
+      remote: magid
+      revision: b8a2200b0b6187c4c0653b9bb68f4d1d87652594
+
+    # Exp73: hold K -> trackpoint tilt becomes volume via te9no's
+    # keybind input-processor (keybind_volume node defined inline in the
+    # overlay, NOT via the module's dtsi, which pulls a missing header).
+    - name: zmk-input-processor-keybind
+      remote: te9no
+      revision: main
+
+  self:
+    path: config
+
+
+
