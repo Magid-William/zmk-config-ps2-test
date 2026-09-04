@@ -1,23 +1,35 @@
 /*
- * Direct PS/2 trackpoint wiring for the nice_nano v2 (Exp68).
+ * Direct PS/2 trackpoint wiring for the nice_nano v2 (Exp68 + Exp78).
  *
- * Uses the gpio-ps2 backend (CLK-edge interrupt sampling, like the AVR
- * decoder this project was built on) - the uart-ps2 trick was tried and
- * abandoned for THIS trackpoint: its clock jitters, so fixed-rate UART
- * sampling produces full-scale decode glitch bursts (50/50 erratic).
+ * Exp78: switched to the uart-ps2 backend @ 19200 baud. The UART trick
+ * glitched at 9600/14400 on THIS trackpoint (jittery RC clock), but 19200
+ * was NEVER tried - this experiment is the clean test of that rate.
+ * This TP rejects EVERY host command (Exp06): NO_HOST_COMMANDS stays on and
+ * the driver never writes; all decode handling lives driver-side.
  *
  * Wiring (fixed empirically - the bench wiring is REVERSED vs stock dabao):
- *   TrackPoint DAT -> P0.08  (pro_micro 0)
- *   TrackPoint CLK -> P0.06  (pro_micro 1)
+ *   TrackPoint DAT -> P0.08  (pro_micro 0)  = uart0 RX via pinctrl below
+ *   TrackPoint CLK -> P0.06  (pro_micro 1)  = scl-gpios (GPIO input)
  *   TrackPoint RST -> float
  *
- * Both lines get internal pull-ups (patched in ps2_gpio.c) - PS/2 lines
- * are open-drain and need them (Exp06: AVR internal pulls sufficed).
+ * Pull-ups: PS/2 lines are open-drain; the uart backend pulls CLK
+ * internally (patched in ps2_uart.c) and DAT idles high.
  */
+
+#include <dt-bindings/pinctrl/nrf-pinctrl.h>
 
 #define MOUSE_PS2_PIN_SCL_PRO_MICRO <&pro_micro 1 GPIO_ACTIVE_HIGH>
 #define MOUSE_PS2_PIN_SDA_PRO_MICRO <&pro_micro 0 GPIO_ACTIVE_HIGH>
 // #define MOUSE_PS2_PIN_RST_PRO_MICRO <&pro_micro 8 GPIO_ACTIVE_HIGH>
+
+/* Exp78: uart-ps2 @ 19200 - the UART RX pin IS the PS/2 DAT line (P0.08).
+ * UART TX / off-state pins are parked on unexposed P0.27: TX is never
+ * exercised (NO_HOST_COMMANDS refuses every write) and the off state only
+ * exists so the UARTE can release DAT if a write were ever attempted. */
+#define MOUSE_PS2_PIN_SDA_PINCTRL <NRF_PSEL(UART_RX, 0, 8)>
+#define MOUSE_PS2_UART_BAUD_RATE <19200>
+#define MOUSE_PS2_PIN_UNEXPOSED_TX <NRF_PSEL(UART_TX, 0, 27)>
+#define MOUSE_PS2_PIN_UNEXPOSED_RX <NRF_PSEL(UART_RX, 0, 27)>
 
 // The Kconfig for both ps2 backends requires these interrupt-priority
 // overrides: GPIOTE at the highest priority, everything else at 3, so BT
@@ -76,18 +88,60 @@
     };
 };
 
+/* Exp78: uart-ps2 backend on uart0 (baud 19200). Mirror of the proven
+ * justinmklam dabao structure, adapted to this bench's pin truth:
+ *   default: UART RX = DAT P0.08, TX parked on unexposed P0.27
+ *   sleep/off: both pins unexposed (releases DAT for GPIO write mode -
+ *   unused here since NO_HOST_COMMANDS never writes, but required by the
+ *   driver's pinctrl state machine). */
+&pinctrl {
+    uart0_ps2_default: uart0_ps2_default {
+        group1 {
+            psels = MOUSE_PS2_PIN_UNEXPOSED_TX,
+                            MOUSE_PS2_PIN_SDA_PINCTRL;
+        };
+    };
+
+    uart0_ps2_off: uart0_ps2_off {
+        group1 {
+            psels = MOUSE_PS2_PIN_UNEXPOSED_TX,
+                            MOUSE_PS2_PIN_UNEXPOSED_RX;
+        };
+    };
+};
+
+&uart0 {
+    status = "disabled";
+    compatible = "nordic,nrf-uarte";
+
+    current-speed = MOUSE_PS2_UART_BAUD_RATE;
+    pinctrl-0 = <&uart0_ps2_default>;
+    pinctrl-1 = <&uart0_ps2_off>;
+    pinctrl-names = "default", "sleep";
+
+    uart_ps2: uart_ps2 {
+        status = "disabled";
+        compatible = "uart-ps2";
+        scl-gpios = MOUSE_PS2_PIN_SCL_PRO_MICRO;
+        sda-gpios = MOUSE_PS2_PIN_SDA_PRO_MICRO;
+    };
+};
+
 / {
     tpoint0: tpoint0 {
         status = "disabled";
         compatible = "zmk,input-mouse-ps2";
-        ps2-device = <&gpio_ps2>;
+        ps2-device = <&uart_ps2>;
 #ifdef MOUSE_PS2_PIN_RST_PRO_MICRO
         rst-gpios = MOUSE_PS2_PIN_RST_PRO_MICRO;
 #endif
     };
 };
 
-&gpio_ps2 {
+&uart0 {
+    status = "okay";
+};
+&uart_ps2 {
     status = "okay";
 };
 &tpoint0 {
