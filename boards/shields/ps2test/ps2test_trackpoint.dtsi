@@ -22,12 +22,10 @@
 #define MOUSE_PS2_PIN_SDA_PRO_MICRO <&pro_micro 0 GPIO_ACTIVE_HIGH>
 // #define MOUSE_PS2_PIN_RST_PRO_MICRO <&pro_micro 8 GPIO_ACTIVE_HIGH>
 
-/* Exp78: uart-ps2 @ 19200 - the UART RX pin IS the PS/2 DAT line (P0.08).
- * UART TX / off-state pins are parked on unexposed P0.27: TX is never
- * exercised (NO_HOST_COMMANDS refuses every write) and the off state only
- * exists so the UARTE can release DAT if a write were ever attempted. */
+/* Exp78 it2: A/B @ 14400 (cell-matched rate - the only one that produced
+ * real motion; 19200 was worse: frame shorter than the PS/2 bit cell. */
 #define MOUSE_PS2_PIN_SDA_PINCTRL <NRF_PSEL(UART_RX, 0, 8)>
-#define MOUSE_PS2_UART_BAUD_RATE <19200>
+#define MOUSE_PS2_UART_BAUD_RATE <14400>
 #define MOUSE_PS2_PIN_UNEXPOSED_TX <NRF_PSEL(UART_TX, 0, 27)>
 #define MOUSE_PS2_PIN_UNEXPOSED_RX <NRF_PSEL(UART_RX, 0, 27)>
 
