@@ -13,9 +13,18 @@ manifest:
       import: app/west.yml
 
     # pr/optional-features branch (optional-features refactor)
+    # verify-driver-exp80: pin moved b8a2200 -> 3ac4d1d to check this bench
+    # against the driver used by dabaseV_0-2 Exp80. Two commits in between:
+    # Exp77 = single-packet magnitude jump filter (ZMK_INPUT_MOUSE_PS2_DELTA_MAX,
+    # default 0 = off, so inert here) and Exp80 = ordered byte/error callback
+    # queue + pointer hold/resync after a lost byte
+    # (ZMK_INPUT_MOUSE_PS2_HOLD_ON_DROP, which defaults to y because this bench
+    # sets NO_HOST_COMMANDS=y - so the bench DOES get the hold behavior).
+    # Deliberately no other change in this branch: any bench difference must be
+    # attributable to the driver.
     - name: zmk-ps2-trackpoint-driver
       remote: magid
-      revision: b8a2200b0b6187c4c0653b9bb68f4d1d87652594
+      revision: 3ac4d1d9176ad138fed54e71faf24ae1383b685c
 
     # Exp73: hold K -> trackpoint tilt becomes volume via te9no's
     # keybind input-processor (keybind_volume node defined inline in the
